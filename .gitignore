@@ -27,3 +27,8 @@ data/*.json
 .env
 .env
 .env
+.env
+.streamlit/secrets.toml
+venv/
+__pycache__/
+data/raw_posts.json
