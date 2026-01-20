@@ -1,0 +1,24 @@
+# Core Python libraries
+pandas==2.1.1
+numpy==1.26.0
+
+# LangChain & LLM
+langchain-core==0.1.47
+langchain-groq==0.1.14
+
+# LLM helpers
+python-dotenv==1.0.1
+
+# Streamlit
+streamlit==1.25.0
+
+# JSON parsing (already built-in, just in case)
+# json is part of Python standard library
+
+# Optional: For handling output parsing
+pydantic==2.3.0
+
+# Optional: For filtering Git repo (if you use git-filter-repo in Python)
+git-filter-repo==2.47.0
+
+# For regex (re is built-in, no need to install)
