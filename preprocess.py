@@ -1,90 +1,95 @@
 import json
-import re
+import os
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 from langchain_core.exceptions import OutputParserException
 from llm_helper import llm
 
-def process_post(raw_file_path, processed_file_path= "/home/sahaj/projects/practise / GenAI&LLM/LinkedinPostGenerator/data/processed_post.json"):
+# --- DYNAMIC PATH LOGIC ---
+# Finds the directory where this script is saved
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# Builds absolute paths to the data files
+DEFAULT_RAW_PATH = os.path.join(BASE_DIR, 'data', 'raw_posts.json')
+DEFAULT_PROCESSED_PATH = os.path.join(BASE_DIR, 'data', 'processed_post.json')
+
+def process_post(raw_file_path=DEFAULT_RAW_PATH, processed_file_path=DEFAULT_PROCESSED_PATH):
     enriched_posts = []
-    with open(raw_file_path, encoding= 'utf-8') as file:
+    
+    if not os.path.exists(raw_file_path):
+        raise FileNotFoundError(f"Input file not found at: {raw_file_path}")
+
+    # 1. Extract raw metadata from each post
+    with open(raw_file_path, encoding='utf-8') as file:
         posts = json.load(file)
         for post in posts:
             metadata = extract_metadata(post['text'])
             post_with_metadata = post | metadata
             enriched_posts.append(post_with_metadata)
-            # post = {'text': 'abc', 'engagemenrt': 345}
-            # metadata = {'line_count': 10, 'langauage': "English", 'tags':['Mental Health', 'Motivation']}
 
-
+    # 2. Unify tags across all posts for consistency
     unified_tags = get_unified_tags(enriched_posts)
 
+    # 3. Apply the unified tags back to the posts
     for post in enriched_posts:
-        current_tags = post["tags"]
-        new_tags = {unified_tags[tag] for tag in current_tags}
+        current_tags = post.get("tags", [])
+        # Map original tags to their unified versions
+        new_tags = {unified_tags.get(tag, tag) for tag in current_tags}
         post['tags'] = list(new_tags)
 
-    with open(processed_file_path, encoding='utf-8', mode= "w") as outfile:
-        json.dump(enriched_posts, outfile, indent = 4 )
+    # 4. Save the final enriched dataset
+    # Create data directory if it doesn't exist
+    os.makedirs(os.path.dirname(processed_file_path), exist_ok=True)
+    
+    with open(processed_file_path, encoding='utf-8', mode="w") as outfile:
+        json.dump(enriched_posts, outfile, indent=4)
+    
+    print(f"Success! Processed data saved to: {processed_file_path}")
 
 def get_unified_tags(post_with_metadata):
     unique_tags = set()
     for post in post_with_metadata:
-        unique_tags.update(post['tags'])
+        unique_tags.update(post.get('tags', []))
 
     unique_tags_list = ', '.join(unique_tags)
-    template = '''I will give you a list of tags. You need to unify tags with the following requirements,
+    template = '''I will give you a list of tags. You need to unify tags with the following requirements:
     1. Tags are unified and merged to create a shorter list. 
-       Example 1: "Jobseekers", "Job Hunting" can be all merged into a single tag "Job Search". 
-       Example 2: "Motivation", "Inspiration", "Drive" can be mapped to "Motivation"
-       Example 3: "Personal Growth", "Personal Development", "Self Improvement" can be mapped to "Self Improvement"
-       Example 4: "Scam Alert", "Job Scam" etc. can be mapped to "Scams"
-    2. Each tag should be follow title case convention. example: "Motivation", "Job Search"
-    3. Output should be a JSON object, No preamble
-    3. Output should have mapping of original tag and the unified tag. 
-       For example: {{"Jobseekers": "Job Search",  "Job Hunting": "Job Search", "Motivation": "Motivation}}
+       Example: "Jobseekers", "Job Hunting" -> "Job Search".
+    2. Each tag should follow Title Case convention.
+    3. Output must be a valid JSON object. No preamble.
+    4. Mapping: {{"original_tag": "unified_tag"}}
     
-    Here is the list of tags: 
-    {tags}
+    Tags: {tags}
     '''
     pt = PromptTemplate.from_template(template)
     chain = pt | llm
-    response = chain.invoke(input={"tags": str(unique_tags_list)})
+    response = chain.invoke(input={"tags": unique_tags_list})
+    
     try:
         json_parser = JsonOutputParser()
-        res = json_parser.parse(response.content)
+        return json_parser.parse(response.content)
     except OutputParserException:
-        raise OutputParserException("Context too big. Unable to parse jobs.")
-    return res
+        raise OutputParserException("Failed to parse unified tags from LLM response.")
 
 def extract_metadata(post):
     template = '''
-    You are given a LinkedIn post. You need to extract number of lines, language of the post and tags.
-    1. Return a valid JSON. No preamble. 
-    2. JSON object should have exactly three keys: line_count, language and tags. 
-    3. tags is an array of text tags. Extract maximum two tags.
-    4. Language should be English or Nepali
+    Extract metadata from this LinkedIn post. 
+    1. Return valid JSON only. No preamble. 
+    2. Keys: line_count (int), language (string), tags (list of strings). 
+    3. Max 2 tags.
+    4. Language: English or Nepali.
     
-    
-    Here is the actual post on which you need to perform this task:  
-    {post}
+    Post: {post}
     '''
-
     pt = PromptTemplate.from_template(template)
     chain = pt | llm
-    response = chain.invoke(input = {'post' : post})
+    response = chain.invoke(input={'post': post})
 
     try: 
         json_parser = JsonOutputParser()
-        res = res = json_parser.parse(response.content)
-
-    except OutputParserException :
-        raise OutputParserException("Context too big. Unable to praise jobs.")
-
-    return res
-
-
-  
+        return json_parser.parse(response.content)
+    except OutputParserException:
+        # Fallback in case of parsing error
+        return {"line_count": 0, "language": "Unknown", "tags": []}
 
 if __name__ == "__main__":
-    process_post("/home/sahaj/projects/practise / GenAI&LLM/LinkedinPostGenerator/data/raw_posts.json")
+    process_post()

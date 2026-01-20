@@ -1,13 +1,19 @@
-from dotenv import  load_dotenv
-from langchain_groq import ChatGroq
 import os
-
+import streamlit as st
+from dotenv import load_dotenv
+from langchain_groq import ChatGroq
 
 load_dotenv()
 
-llm = ChatGroq(groq_api_key = os.getenv("GROQ_API_KEY"), model_name= 'meta-llama/llama-4-scout-17b-16e-instruct')
+# Prioritize Streamlit Secrets, then Environment Variables
+api_key = st.secrets.get("GROQ_API_KEY") or os.getenv("GROQ_API_KEY")
 
+if not api_key:
+    st.error("Missing GROQ_API_KEY.")
+    st.stop()
 
-if __name__ == "__main__":
-    response = llm.invoke("What are the main ingradients in samosa")
-    print(response.content)
+# UPDATED MODEL NAME HERE
+llm = ChatGroq(
+    groq_api_key=api_key, 
+    model_name='llama-3.3-70b-versatile' 
+)
