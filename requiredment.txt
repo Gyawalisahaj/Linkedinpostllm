@@ -9,16 +9,14 @@ langchain-groq==0.1.14
 # LLM helpers
 python-dotenv==1.0.1
 
-# Streamlit
+# Streamlit for web app
 streamlit==1.25.0
 
-# JSON parsing (already built-in, just in case)
-# json is part of Python standard library
-
-# Optional: For handling output parsing
+# Optional: For handling structured output parsing
 pydantic==2.3.0
 
-# Optional: For filtering Git repo (if you use git-filter-repo in Python)
+# Optional: For cleaning Git repo history (if needed)
 git-filter-repo==2.47.0
 
-# For regex (re is built-in, no need to install)
+# Built-in libraries (no need to install)
+# json, re
