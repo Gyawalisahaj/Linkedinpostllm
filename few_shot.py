@@ -42,8 +42,10 @@ class FewShotPosts:
         return {tag for tag in self.unique_tags if pd.notna(tag)}
 
     def get_languages(self):
-        # Return only languages that actually exist in the data
-        return sorted(self.df['language'].unique())
+        # Return only English and Nepali languages
+        allowed_languages = ["English", "Nepali"]
+        available = sorted([lang for lang in self.df['language'].unique() if lang in allowed_languages])
+        return available
 
     def get_filtered_posts(self, length, language, tag):
         df_filtered = self.df[
