@@ -38,7 +38,12 @@ class FewShotPosts:
             return "Long"
 
     def get_tags(self):
-        return self.unique_tags
+        # Filter out nan values from tags
+        return {tag for tag in self.unique_tags if pd.notna(tag)}
+
+    def get_languages(self):
+        # Return only languages that actually exist in the data
+        return sorted(self.df['language'].unique())
 
     def get_filtered_posts(self, length, language, tag):
         df_filtered = self.df[
