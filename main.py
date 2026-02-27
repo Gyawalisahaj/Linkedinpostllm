@@ -3,30 +3,26 @@ from few_shot import FewShotPosts
 from post_generator import generate_post
 
 
-
-length_options = ["Short", "Medium", "Long"]
-language_options = ["English", "Nepali"]
-
-
-
 def main():
     st.subheader("LinkedIn Post Generator: By Sahaj")
 
+    fs = FewShotPosts()
+    
+    # Get dynamic options from actual data
+    tags = fs.get_tags()
+    languages = fs.get_languages()
+    length_options = ["Short", "Medium", "Long"]
+
     col1, col2, col3 = st.columns(3)
 
-    fs = FewShotPosts()
-    tags = fs.get_tags()
     with col1:
-
-        selected_tag = st.selectbox("Topic", options=tags)
+        selected_tag = st.selectbox("Topic", options=sorted(tags))
 
     with col2:
-
         selected_length = st.selectbox("Length", options=length_options)
 
     with col3:
-
-        selected_language = st.selectbox("Language", options=language_options)
+        selected_language = st.selectbox("Language", options=languages)
 
 
     if st.button("Generate"):
